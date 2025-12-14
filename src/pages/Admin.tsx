@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Pencil, Trash2, FolderPlus } from "lucide-react";
+import { Plus, Pencil, Trash2, FolderPlus, Upload, X, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 
 interface Category {
@@ -56,6 +56,10 @@ const Admin = () => {
   const [itemPrice, setItemPrice] = useState("");
   const [itemCategory, setItemCategory] = useState("");
   const [itemAvailable, setItemAvailable] = useState(true);
+  const [itemImageUrl, setItemImageUrl] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (!authLoading && (!user || role !== "admin")) {
@@ -79,6 +83,61 @@ const Admin = () => {
     if (cats) setCategories(cats);
     if (items) setMenuItems(items);
     setLoading(false);
+  };
+
+  // Image upload handler
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be less than 5MB");
+      return;
+    }
+
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const uploadImage = async (): Promise<string | null> => {
+    if (!imageFile) return itemImageUrl || null;
+
+    setUploading(true);
+    try {
+      const fileExt = imageFile.name.split(".").pop();
+      const fileName = `${crypto.randomUUID()}.${fileExt}`;
+      const filePath = `items/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("menu-images")
+        .upload(filePath, imageFile);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("menu-images")
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error: any) {
+      toast.error("Failed to upload image: " + error.message);
+      return itemImageUrl || null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setItemImageUrl("");
   };
 
   // Category handlers
@@ -150,6 +209,9 @@ const Admin = () => {
     }
 
     try {
+      // Upload image if selected
+      const imageUrl = await uploadImage();
+
       if (editingItem) {
         const { error } = await supabase
           .from("menu_items")
@@ -159,6 +221,7 @@ const Admin = () => {
             price,
             category_id: itemCategory,
             is_available: itemAvailable,
+            image_url: imageUrl,
           })
           .eq("id", editingItem.id);
         if (error) throw error;
@@ -172,6 +235,7 @@ const Admin = () => {
             price,
             category_id: itemCategory,
             is_available: itemAvailable,
+            image_url: imageUrl,
           });
         if (error) throw error;
         toast.success("Item created");
@@ -202,6 +266,9 @@ const Admin = () => {
     setItemPrice("");
     setItemCategory("");
     setItemAvailable(true);
+    setItemImageUrl("");
+    setImageFile(null);
+    setImagePreview(null);
     setEditingItem(null);
   };
 
@@ -212,6 +279,9 @@ const Admin = () => {
     setItemPrice(item.price.toString());
     setItemCategory(item.category_id || "");
     setItemAvailable(item.is_available ?? true);
+    setItemImageUrl(item.image_url || "");
+    setImagePreview(item.image_url || null);
+    setImageFile(null);
     setItemDialog(true);
   };
 
@@ -253,11 +323,48 @@ const Admin = () => {
                       Add Item
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>{editingItem ? "Edit Item" : "Add New Item"}</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
+                      {/* Image Upload */}
+                      <div>
+                        <Label>Image</Label>
+                        <div className="mt-2">
+                          {imagePreview ? (
+                            <div className="relative inline-block">
+                              <img
+                                src={imagePreview}
+                                alt="Preview"
+                                className="h-32 w-32 rounded-lg object-cover"
+                              />
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                className="absolute -right-2 -top-2 h-6 w-6"
+                                onClick={removeImage}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <label className="flex h-32 w-32 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted/50 transition-colors hover:border-primary hover:bg-muted">
+                              <Upload className="mb-2 h-6 w-6 text-muted-foreground" />
+                              <span className="text-xs text-muted-foreground">Upload</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageSelect}
+                                className="hidden"
+                              />
+                            </label>
+                          )}
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">Max 5MB. JPG, PNG, WebP</p>
+                      </div>
+
                       <div>
                         <Label>Name</Label>
                         <Input value={itemName} onChange={(e) => setItemName(e.target.value)} />
@@ -287,8 +394,8 @@ const Admin = () => {
                         <Switch checked={itemAvailable} onCheckedChange={setItemAvailable} />
                         <Label>Available</Label>
                       </div>
-                      <Button onClick={handleSaveItem} className="w-full">
-                        {editingItem ? "Update" : "Create"}
+                      <Button onClick={handleSaveItem} className="w-full" disabled={uploading}>
+                        {uploading ? "Uploading..." : editingItem ? "Update" : "Create"}
                       </Button>
                     </div>
                   </DialogContent>
@@ -298,6 +405,7 @@ const Admin = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-16">Image</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Category</TableHead>
                       <TableHead>Price</TableHead>
@@ -308,6 +416,19 @@ const Admin = () => {
                   <TableBody>
                     {menuItems.map((item) => (
                       <TableRow key={item.id}>
+                        <TableCell>
+                          {item.image_url ? (
+                            <img
+                              src={item.image_url}
+                              alt={item.name}
+                              className="h-10 w-10 rounded object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-10 w-10 items-center justify-center rounded bg-muted">
+                              <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                          )}
+                        </TableCell>
                         <TableCell className="font-medium">{item.name}</TableCell>
                         <TableCell>
                           {categories.find((c) => c.id === item.category_id)?.name || "—"}
