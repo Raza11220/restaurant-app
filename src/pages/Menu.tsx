@@ -56,21 +56,25 @@ const Menu = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="mb-2 text-3xl font-bold text-foreground">Our Menu</h1>
-          <p className="text-muted-foreground">Explore our delicious selection of dishes</p>
+      <main className="container mx-auto px-4 py-12">
+        <div className="mb-10 text-center">
+          <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary mb-4">
+            <Filter className="h-4 w-4" />
+            Our Menu
+          </div>
+          <h1 className="mb-3 text-4xl md:text-5xl font-bold text-foreground">Our Menu</h1>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Explore our delicious selection of dishes</p>
         </div>
 
         {/* Filters */}
-        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center">
+        <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search menu items..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 h-11 border-2 focus-visible:ring-primary"
             />
           </div>
           <div className="flex flex-wrap gap-2">
@@ -78,6 +82,7 @@ const Menu = () => {
               variant={selectedCategory === "all" ? "default" : "outline"}
               size="sm"
               onClick={() => setSelectedCategory("all")}
+              className={selectedCategory === "all" ? "bg-gradient-to-r from-primary to-orange-500 shadow-md" : ""}
             >
               All
             </Button>
@@ -87,6 +92,7 @@ const Menu = () => {
                 variant={selectedCategory === cat.id ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedCategory(cat.id)}
+                className={selectedCategory === cat.id ? "bg-gradient-to-r from-primary to-orange-500 shadow-md" : ""}
               >
                 {cat.name}
               </Button>

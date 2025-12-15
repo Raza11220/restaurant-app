@@ -24,13 +24,13 @@ const Navbar = () => {
   ].filter(link => link.show);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+    <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/80 shadow-sm">
       <nav className="container mx-auto flex h-16 items-center justify-between px-4">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
+        <Link to="/" className="flex items-center gap-2.5 group">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-orange-500 shadow-lg transition-transform group-hover:scale-110">
             <UtensilsCrossed className="h-5 w-5 text-primary-foreground" />
           </div>
-          <span className="text-xl font-bold text-foreground">Tastify</span>
+          <span className="text-xl font-bold bg-gradient-to-r from-primary to-orange-500 bg-clip-text text-transparent">Tastify</span>
         </Link>
 
         {/* Desktop Navigation */}
@@ -39,20 +39,21 @@ const Navbar = () => {
             <Link
               key={link.to}
               to={link.to}
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              className="text-sm font-medium text-muted-foreground transition-all hover:text-foreground relative group"
             >
               {link.label}
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-primary to-orange-500 transition-all group-hover:w-full"></span>
             </Link>
           ))}
         </div>
 
         <div className="hidden items-center gap-3 md:flex">
           {user && role === "customer" && (
-            <Link to="/cart" className="relative">
-              <Button variant="ghost" size="icon">
+            <Link to="/cart" className="relative group">
+              <Button variant="ghost" size="icon" className="hover:bg-primary/10">
                 <ShoppingCart className="h-5 w-5" />
                 {totalItems > 0 && (
-                  <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">
+                  <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-r from-primary to-orange-500 text-xs font-bold text-primary-foreground shadow-lg animate-pulse">
                     {totalItems}
                   </span>
                 )}
@@ -62,20 +63,20 @@ const Navbar = () => {
 
           {user ? (
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium capitalize">{role}</span>
+              <div className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-primary/10 to-orange-500/10 border border-primary/20 px-3 py-1.5">
+                <User className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold capitalize text-primary">{role}</span>
               </div>
-              <Button variant="ghost" size="icon" onClick={handleSignOut}>
+              <Button variant="ghost" size="icon" onClick={handleSignOut} className="hover:bg-destructive/10 hover:text-destructive">
                 <LogOut className="h-5 w-5" />
               </Button>
             </div>
           ) : (
             <div className="flex gap-2">
-              <Button variant="ghost" asChild>
+              <Button variant="ghost" asChild className="hover:bg-primary/5">
                 <Link to="/auth">Login</Link>
               </Button>
-              <Button asChild>
+              <Button asChild className="bg-gradient-to-r from-primary to-orange-500 hover:opacity-90 shadow-lg">
                 <Link to="/auth?mode=signup">Sign Up</Link>
               </Button>
             </div>
